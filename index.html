@@ -74,7 +74,7 @@
 
         .player-wrapper {
             position: relative;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            padding-bottom: 56.25%; /* 16:9 ratio */
             height: 0;
             background-color: #000;
         }
@@ -170,7 +170,8 @@
         <div class="modal-content">
             <h2>Age Verification</h2>
             <p>E site lo content chudadaniki meeku kachithanga 18+ years nindi undali.</p>
-            <button class="btn-confirm" onclick="confirmAge()">Naku 18+ Years (Enter)</button>
+            <!-- Direct onclick function to guarantee working -->
+            <button class="btn-confirm" onclick="closeAgeModal()">Naku 18+ Years (Enter)</button>
         </div>
     </div>
 
@@ -187,11 +188,15 @@
     </div>
 
     <script>
-        function confirmAge() {
-            document.getElementById('age-modal').style.display = 'none';
+        // Direct global function for modal closing
+        function closeAgeModal() {
+            const modal = document.getElementById('age-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         }
 
-        // Mee Supabase Credentials Configured
+        // Supabase Credentials
         const SUPABASE_URL = 'https://qhzfeayfufeovkttvycg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_RnQLYXFjBaNMh5yThZ-zeg_lPIbPMjw';
 
@@ -242,6 +247,7 @@
             }
         }
 
+        // Run fetch on load
         window.onload = fetchVideos;
     </script>
 </body>
