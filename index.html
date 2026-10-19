@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVerse - Adult Video Platform</title>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f0f12;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #1a1a24;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2a38;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff0055;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            margin-bottom: 20px;
+            font-size: 22px;
+            border-left: 4px solid #ff0055;
+            padding-left: 10px;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .video-card {
+            background-color: #1a1a24;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .player-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            background-color: #000;
+        }
+
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-info {
+            padding: 15px;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .video-desc {
+            font-size: 13px;
+            color: #a0a0b0;
+        }
+
+        /* 18+ Verification Modal */
+        #age-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1a1a24;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            border: 1px solid #333;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+            color: #ff0055;
+        }
+
+        .modal-content p {
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .btn-confirm {
+            background-color: #ff0055;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-confirm:hover {
+            background-color: #d00045;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Age Verification Modal -->
+    <div id="age-modal">
+        <div class="modal-content">
+            <h2>Age Verification</h2>
+            <p>E site lo content chudadaniki meeku kachithanga 18+ years nindi undali.</p>
+            <button class="btn-confirm" onclick="confirmAge()">Naku 18+ Years (Enter)</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <a href="#" class="logo">StreamVerse</a>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h2 class="section-title">Latest Videos</h2>
+        <div id="loading" class="loading">Database nunchi videos fetch avthunnayi...</div>
+        <div id="video-grid" class="video-grid"></div>
+    </div>
+
+    <script>
+        function confirmAge() {
+            document.getElementById('age-modal').style.display = 'none';
+        }
+
+        // Mee Supabase Credentials Configured
+        const SUPABASE_URL = 'https://qhzfeayfufeovkttvycg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_RnQLYXFjBaNMh5yThZ-zeg_lPIbPMjw';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function fetchVideos() {
+            const loadingElement = document.getElementById('loading');
+            const videoGrid = document.getElementById('video-grid');
+
+            try {
+                const { data: videos, error } = await supabase
+                    .from('videos')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                loadingElement.style.display = 'none';
+
+                if (!videos || videos.length === 0) {
+                    videoGrid.innerHTML = '<p>No videos found. Database lo entries add cheyandi.</p>';
+                    return;
+                }
+
+                videos.forEach(video => {
+                    const cardHtml = `
+                        <div class="video-card">
+                            <div class="player-wrapper">
+                                <iframe 
+                                    src="${video.turboviplay_url}" 
+                                    allowfullscreen 
+                                    scrolling="no" 
+                                    allow="autoplay; encrypted-media">
+                                </iframe>
+                            </div>
+                            <div class="video-info">
+                                <div class="video-title">${video.title || 'Untitled Video'}</div>
+                                <div class="video-desc">${video.description || ''}</div>
+                            </div>
+                        </div>
+                    `;
+                    videoGrid.innerHTML += cardHtml;
+                });
+
+            } catch (err) {
+                console.error("Error fetching videos:", err.message);
+                loadingElement.innerText = "Error loading videos. Check database setup.";
+            }
+        }
+
+        window.onload = fetchVideos;
+    </script>
+</body>
+</html>
